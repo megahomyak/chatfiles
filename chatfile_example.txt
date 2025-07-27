@@ -1,0 +1,11 @@
+\config\room name\blah
+\config\server ip\1.2.3.4
+\config\username\lisa-nosatik
+\config\password\the fish of my dreams
+that only works if you're in math mode
+\>by lisa-nosatik, at 00:25:23 28.07.2025 UTC
+I *am* in math mode, it is inside a \[ \] block
+
+\\lim_{x \to \infty} \frac{1}{x} still renders weird though
+\>by lisa-ooshastik, at 00:27:00 28.07.2025 UTC
+maybe you're missing a package or something?

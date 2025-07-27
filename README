@@ -1,0 +1,18 @@
+A "chat file" (or a "chatfile"; name suggested by doesnm) is a chat (probably with its meta information attached) stored inside a textual file. Its format is extremely simple, entirely based on time-tested and ubiquitous technologies: an appendable text file and a UTF-8 or an ASCII encoding.
+
+The idea behind chat files is simple: in sequential communication, we can quite easily forgo message modification, and thus the only changes to the dialogue will happen at its end - new messages arriving - which can be simply appended to the end of a file quite cheaply. You can see a chatfile example at "./chatfile_example.txt".
+
+A Backus-Naur Form specification of syntax of chatfiles, ASSUMING a "<line-char>" is any valid code point of UTF-8 but NOT "\n", "\r" or "\\":
+<line-remainder-char> ::= <line-char> | "\\"
+<line-remainder> ::= <line-remainder-char> <line-remainder> | ""
+<escaped-line> ::= "\\" "\\" <line-remainder>
+<special-line> ::= "\\" <line-char> <line-remainder> | "\\"
+<regular-line> ::= <line-char> <line-remainder> | ""
+<line> ::= <escaped-line> | <special-line> | <regular-line>
+<chatfile> ::= <line> "\n" <chatfile> | ""
+
+When reading chatfiles, every "\r" (caret return) character in them should be ignored, which is recommended to coerce Windows' "\r\n" to Linux's "\n".
+
+Since chatfiles suppose manual editing, when writing a line separator to a chat file, it is recommended to infer what it would be from the user's OS. If you are feeling cophisticated, you can even infer the separator from some existing related chatfile if it has any separators.
+
+If the last line of the file is empty, it should be ignored. This is because POSIX has a line definition requiring "\n" to be the end of every line, but since chatfiles use "\n" as a line *separator* and not a line *terminator*, any POSIX-compliant text file with at least one line would have an empty line at the end when interpreted as a chat file.
