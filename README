@@ -1,6 +1,6 @@
 A "chat file" (or a "chatfile"; name suggested by doesnm) is a chat (probably with its meta information attached) stored inside a textual file. Its format is extremely simple, entirely based on time-tested and ubiquitous technologies: an appendable text file and a UTF-8 or an ASCII encoding.
 
-The idea behind chat files is simple: in sequential communication, we can quite easily forgo message modification, and thus the only changes to the dialogue will happen at its end - new messages arriving - which can be simply appended to the end of a file quite cheaply. You can see a chatfile example at "./chatfile_example.txt".
+The idea behind chat files is simple: in sequential communication, we can quite easily forgo message modification, and thus the only changes to the dialogue will happen at its end - new messages arriving - which can be simply appended to the end of a file quite cheaply. The user is supposed to write their new messages at the end of the chat file (also only appending), and upon sending the message, the sending program would add a special line after the user's writings, indicating the message has been sent (which is also only appending). You can see a chatfile example at "./chatfile_example.txt".
 
 A Backus-Naur Form specification of syntax of chatfiles, ASSUMING a "<line-char>" is any valid code point of UTF-8 but NOT "\n", "\r" or "\\":
 <line-remainder-char> ::= <line-char> | "\\"
