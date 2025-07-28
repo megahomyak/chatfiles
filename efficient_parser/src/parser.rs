@@ -1,97 +1,162 @@
-pub trait Char: Sized + Copy {
-    fn next(&self) -> Option<Self>;
-    fn prev(&self) -> Option<Self>;
-    fn value(&self) -> char;
-}
-
-pub trait FileContents {
-    type Char: Char;
-
-    fn beginning(&self) -> Self::Char;
-    fn end(&self) -> Self::Char;
-}
-
-pub trait File {
-    type Contents: FileContents;
-
-    fn contents(&self) -> Option<Self::Contents>;
-}
-
-pub struct Password {
-    pub password: String,
-}
-
+#[derive(Debug)]
 pub struct ParsingResult {
     pub room_name: String,
     pub server_ip: String,
     pub username: String,
-    pub password: Password,
+    pub password: String,
     pub new_message: Option<String>,
 }
 
-enum NextCharCategory {
-    SameLine(),
-    OtherLine(),
+pub trait Cursor {
+    fn back(&mut self) -> bool;
+    fn read(&mut self) -> Option<char>;
+    fn end(&mut self);
 }
 
-fn categorize_next_char<C: Char>(cur: &C) -> NextCharCategory {
-    if cur.value() == '\n' {
-        NextCharCategory::OtherLine()
-    } else {
-        NextCharCategory::SameLine()
-    }
-}
-
-fn next_line<C: Char>(mut cur: C) -> Option<C> {
-    loop {
-        let next = cur.next()?;
-        match categorize_next_char(&cur) {
-            NextCharCategory::SameLine() => cur = next,
-            NextCharCategory::OtherLine() => break Some(next),
+fn next_line(cursor: &mut impl Cursor) -> bool {
+    while let Some(c) = cursor.read() {
+        println!("a");
+        if c == '\n' {
+            return true;
         }
     }
+    false
 }
 
-fn find_line_beginning<C: Char>(mut cur: C) -> C {
-    loop {
-        match cur.prev() {
-            None => break,
-            Some(prev) => match categorize_next_char(&prev) {
-                NextCharCategory::OtherLine() => break,
-                NextCharCategory::SameLine() => cur = prev,
+fn line_beginning(cursor: &mut impl Cursor) {
+    while cursor.back() && cursor.read().unwrap() != '\n' {
+        println!("b");
+        cursor.back();
+    }
+}
+
+fn prev_line(cursor: &mut impl Cursor) -> bool {
+    if !cursor.back() {
+        return false;
+    }
+    line_beginning(cursor);
+    true
+}
+
+fn match_str(cursor: &mut impl Cursor, pattern: &'static str) -> bool {
+    let mut forward = 0;
+    'iteration: {
+        for c in pattern.chars() {
+            match cursor.read() {
+                Some(next) => {
+                    forward += 1;
+                    if next != c {
+                        break 'iteration;
+                    }
+                },
+                None => break 'iteration,
             }
         }
+        return true;
+    };
+    for _ in 0..forward {
+        cursor.back();
     }
-    cur
+    false
 }
 
-fn prev_line<C: Char>(cur: C) -> Option<C> {
-    cur.prev().map(|prev| find_line_beginning(prev))
-}
-
-fn read_line<C: Char>(mut cur: C) -> String {
+fn read_line(cursor: &mut impl Cursor) -> String {
     let mut buffer = String::new();
-    loop {
-        match cur.next() {
-            None => break,
-            Some(next) => match categorize_next_char(&cur) {
-                NextCharCategory::OtherLine() => break,
-                NextCharCategory::SameLine() => {
-                    buffer.push(next.value());
-                    cur = next;
-                }
-            }
+    while let Some(c) = cursor.read() {
+        println!("c");
+        if c == '\n' {
+            break;
+        } else {
+            buffer.push(c);
         }
     }
     buffer
 }
 
-pub fn parse(file: impl File) -> Option<ParsingResult> {
-    pub fn parse(file_contents: impl FileContents) -> Option<ParsingResult> {
-        let mut beginning_line = file_contents.beginning();
-        loop {
-            let next = beginning_line.next();
+enum LineCategory {
+    Special(),
+    Regular(),
+}
+
+fn categorize_line(cursor: &mut impl Cursor) -> LineCategory {
+    if match_str(cursor, "\\\\") {
+        cursor.back();
+    } else if match_str(cursor, "\\") {
+        return LineCategory::Special();
+    }
+    LineCategory::Regular()
+}
+
+pub fn parse(beginning: &mut impl Cursor) -> Option<ParsingResult> {
+    let mut room_name = None;
+    let mut server_ip = None;
+    let mut username = None;
+    let mut password = None;
+    loop {
+        println!("d");
+        let mut line_read = false;
+        struct LineChecker<'a, C: Cursor> {
+            line_read: &'a mut bool,
+            cursor: &'a mut C,
+        }
+        impl<'a, C: Cursor> LineChecker<'a, C> {
+            fn check_line(&mut self, receiver: &mut Option<String>, pattern: &'static str) -> bool {
+                let matched = match_str(self.cursor, pattern);
+                if matched {
+                    *receiver = Some(read_line(self.cursor));
+                    *self.line_read = true;
+                }
+                matched
+            }
+        }
+        if let LineCategory::Special() = categorize_line(beginning) {
+            if match_str(beginning, "config\\") {
+                let mut line_reader = LineChecker { line_read: &mut line_read, cursor: beginning };
+                if line_reader.check_line(&mut room_name, "room name\\") {
+                } else if line_reader.check_line(&mut server_ip, "server ip\\") {
+                } else if line_reader.check_line(&mut username, "username\\") {
+                } else if line_reader.check_line(&mut password, "password\\") {
+                }
+            }
+        }
+        if !line_read && !next_line(beginning) {
+            break;
+        }
+    };
+    let room_name = room_name?;
+    let username = username?;
+    let password = password?;
+    let server_ip = server_ip?;
+    beginning.end();
+    let end = beginning;
+    line_beginning(end);
+    if !end.read().is_some() {
+        end.back();
+    }
+    line_beginning(end);
+    let mut new_message_lines = Vec::new();
+    loop {
+        println!("e");
+        match categorize_line(end) {
+            LineCategory::Special() => break,
+            LineCategory::Regular() => new_message_lines.push(read_line(end)),
+        }
+        end.back();
+        if !prev_line(end) {
+            break;
         }
     }
-    file.contents().and_then(|contents| parse(contents))
+    new_message_lines.reverse();
+    let new_message = if new_message_lines.len() == 0 {
+        None
+    } else {
+        Some(new_message_lines.join("\n"))
+    };
+    Some(ParsingResult {
+        room_name,
+        username,
+        password,
+        server_ip,
+        new_message,
+    })
 }
