@@ -1,75 +1,86 @@
-pub enum MovingResult {
-    Moved(char),
-    Blocked(),
-}
-
 pub trait Cursor {
-    fn back(&mut self) -> MovingResult<char>;
-    fn forward(&mut self) -> MovingResult<char>;
-    fn go_to_end(&mut self);
+    fn prev(&mut self) -> Option<char>;
+    fn next(&mut self) -> Option<char>;
+    fn end(&mut self);
 }
 
-fn back_real(cursor: &mut impl Cursor) -> bool {
-    match cursor.back() {
-        MovingResult::Blocked() => MovingResult::Blocked(),
-        MovingResult::Moved(char) => {
-            let c = 
-        },
-    }
-    match cursor.back() {
-        BackingResult::Blocked() => BackingResult::Blocked(),
-        BackingResult::Moved() => {
-
-        },
-    }
-    match cursor.back() {
-        false => false,
-        true => {
-            let c = cursor.read().unwrap();
-
-        },
-    }
-    if cursor.back() {
-        let c = cursor.read().unwrap();
-        cursor.back();
-        if c == '\r' {
-            cursor.back()
+fn prev_real(cursor: &mut impl Cursor) -> Option<char> {
+    match cursor.prev() {
+        None => None,
+        Some(c) => if c == '\r' {
+            cursor.prev()
         } else {
-            true
-        }
-    } else {
-        false
+            Some(c)
+        },
+    }
+}
+
+fn next_real(cursor: &mut impl Cursor) -> Option<char> {
+    match cursor.next() {
+        None => None,
+        Some(c) => if c == '\r' {
+            cursor.next()
+        } else {
+            Some(c)
+        },
     }
 }
 
 fn line_beginning(cursor: &mut impl Cursor) {
-    while self.cursor.back() && self.cursor.read().unwrap() != '\n' {
-        self.cursor.back();
+    while let Some(c) = cursor.prev() {
+        if c == '\n' {
+            cursor.next().unwrap();
+            break;
+        }
     }
 }
 
-pub struct LinesForward<C: Cursor> {
-    cursor: C,
+pub struct LinesForward<'a, C: Cursor> {
+    cursor: &'a mut C,
 }
 
-impl<C: Cursor> LinesForward<C> {
-    pub fn new(cursor: C) -> Self {
+impl<'a, C: Cursor> LinesForward<'a, C> {
+    pub fn new(cursor: &'a mut C) -> Self {
         Self { cursor }
     }
-    pub fn end(self) -> LinesBack<C> {
+    pub fn end(mut self) -> LinesBack<C> {
         self.cursor.end();
-        self.cursor.back();
-        line_beginning(&mut self.cursor);
-        LinesBack { cursor }
+        self.cursor.prev();
+        line_beginning(self.cursor);
+        LinesBack { cursor: self.cursor }
     }
 }
 
-pub struct LinesBack<C: Cursor> {
-    cursor: C,
+impl<'a, C: Cursor> Iterator for LinesForward<'a, C> {
+    type Item = &'a mut C;
+
+    fn next(&mut self) -> Option<Self::Item> {
+
+    }
 }
 
-pub struct Line<C: Cursor> {
-    cursor: C,
+pub struct LinesBack<'a, C: Cursor> {
+    cursor: &'a mut C,
+}
+
+pub struct Line<'a, C: Cursor> {
+    cursor: &'a mut C,
+}
+
+impl<'a, C: Cursor> Iterator for Line<'a, C> {
+    type Item = char;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match next_real(self.cursor) {
+            None => None,
+            Some(c) => if c == '\n' {
+                prev_real(self.cursor).unwrap();
+                None
+            } else {
+                Some(c)
+            },
+        }
+    }
 }
 
 pub enum LineCategory {
@@ -77,6 +88,7 @@ pub enum LineCategory {
     Regular(),
 }
 
+/*
 impl<C: Cursor> Line<C> {
     pub fn new(cursor: C) -> Self {
         Self { cursor }
@@ -156,3 +168,4 @@ impl<C: Cursor> Iterator for Line<C> {
         })
     }
 }
+*/
