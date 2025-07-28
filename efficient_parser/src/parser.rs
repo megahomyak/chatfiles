@@ -1,7 +1,71 @@
+pub enum MovingResult {
+    Moved(char),
+    Blocked(),
+}
+
 pub trait Cursor {
-    fn back(&mut self) -> bool;
-    fn read(&mut self) -> Option<char>;
-    fn end(&mut self);
+    fn back(&mut self) -> MovingResult<char>;
+    fn forward(&mut self) -> MovingResult<char>;
+    fn go_to_end(&mut self);
+}
+
+fn back_real(cursor: &mut impl Cursor) -> bool {
+    match cursor.back() {
+        MovingResult::Blocked() => MovingResult::Blocked(),
+        MovingResult::Moved(char) => {
+            let c = 
+        },
+    }
+    match cursor.back() {
+        BackingResult::Blocked() => BackingResult::Blocked(),
+        BackingResult::Moved() => {
+
+        },
+    }
+    match cursor.back() {
+        false => false,
+        true => {
+            let c = cursor.read().unwrap();
+
+        },
+    }
+    if cursor.back() {
+        let c = cursor.read().unwrap();
+        cursor.back();
+        if c == '\r' {
+            cursor.back()
+        } else {
+            true
+        }
+    } else {
+        false
+    }
+}
+
+fn line_beginning(cursor: &mut impl Cursor) {
+    while self.cursor.back() && self.cursor.read().unwrap() != '\n' {
+        self.cursor.back();
+    }
+}
+
+pub struct LinesForward<C: Cursor> {
+    cursor: C,
+}
+
+impl<C: Cursor> LinesForward<C> {
+    pub fn new(cursor: C) -> Self {
+        Self { cursor }
+    }
+    pub fn end(self) -> LinesBack<C> {
+        self.cursor.end();
+        self.cursor.back();
+        line_beginning(&mut self.cursor);
+        LinesBack { cursor }
+    }
+}
+
+pub struct LinesBack<C: Cursor> {
+    cursor: C,
 }
 
 pub struct Line<C: Cursor> {
