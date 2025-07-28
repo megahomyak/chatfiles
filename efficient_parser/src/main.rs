@@ -24,8 +24,9 @@ impl<File: Seek + Read> parser::Cursor for FileCursor<File> {
 }
 
 fn main() {
-    let mut cursor = FileCursor {
-        file: std::fs::File::open("../chatfile_example.txt").unwrap(),
+    let chatfile_path = std::env::args().nth(1).unwrap();
+    let mut beginning = FileCursor {
+        file: std::fs::File::open(chatfile_path).unwrap(),
     };
-    println!("{:#?}", parser::parse(&mut cursor));
+    println!("{:#?}", parser::parse(&mut beginning));
 }

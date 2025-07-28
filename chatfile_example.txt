@@ -8,4 +8,5 @@ I *am* in math mode, it is inside a \[ \] block
 
 \\lim_{x \to \infty} \frac{1}{x} still renders weird though
 \>by lisa-ooshastik, at 00:27:00 28.07.2025 UTC
+hmm
 maybe you're missing a package or something?

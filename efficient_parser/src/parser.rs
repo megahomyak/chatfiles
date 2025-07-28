@@ -13,9 +13,9 @@ pub trait Cursor {
     fn end(&mut self);
 }
 
+// starts at line beginning, ends at line beginning on success or wherever on error
 fn next_line(cursor: &mut impl Cursor) -> bool {
     while let Some(c) = cursor.read() {
-        println!("a");
         if c == '\n' {
             return true;
         }
@@ -23,13 +23,14 @@ fn next_line(cursor: &mut impl Cursor) -> bool {
     false
 }
 
+// starts wherever, ends at line beginning
 fn line_beginning(cursor: &mut impl Cursor) {
     while cursor.back() && cursor.read().unwrap() != '\n' {
-        println!("b");
         cursor.back();
     }
 }
 
+// starts at line beginning, ends at line beginning on success or wherever on error
 fn prev_line(cursor: &mut impl Cursor) -> bool {
     if !cursor.back() {
         return false;
@@ -38,13 +39,14 @@ fn prev_line(cursor: &mut impl Cursor) -> bool {
     true
 }
 
+// starts wherever, ends after pattern on success or where started on error
 fn match_str(cursor: &mut impl Cursor, pattern: &'static str) -> bool {
-    let mut forward = 0;
+    let mut distance = 0;
     'iteration: {
         for c in pattern.chars() {
             match cursor.read() {
                 Some(next) => {
-                    forward += 1;
+                    distance += 1;
                     if next != c {
                         break 'iteration;
                     }
@@ -54,17 +56,18 @@ fn match_str(cursor: &mut impl Cursor, pattern: &'static str) -> bool {
         }
         return true;
     };
-    for _ in 0..forward {
+    for _ in 0..distance {
         cursor.back();
     }
     false
 }
 
+// starts wherever, ends in the same line at the line separator
 fn read_line(cursor: &mut impl Cursor) -> String {
     let mut buffer = String::new();
     while let Some(c) = cursor.read() {
-        println!("c");
         if c == '\n' {
+            cursor.back();
             break;
         } else {
             buffer.push(c);
@@ -78,6 +81,7 @@ enum LineCategory {
     Regular(),
 }
 
+// starts at line beginning, ends at line category's contents
 fn categorize_line(cursor: &mut impl Cursor) -> LineCategory {
     if match_str(cursor, "\\\\") {
         cursor.back();
@@ -87,13 +91,13 @@ fn categorize_line(cursor: &mut impl Cursor) -> LineCategory {
     LineCategory::Regular()
 }
 
+// starts at chatfile beginning, ends wherever
 pub fn parse(beginning: &mut impl Cursor) -> Option<ParsingResult> {
     let mut room_name = None;
     let mut server_ip = None;
     let mut username = None;
     let mut password = None;
     loop {
-        println!("d");
         let mut line_read = false;
         struct LineChecker<'a, C: Cursor> {
             line_read: &'a mut bool,
@@ -104,6 +108,7 @@ pub fn parse(beginning: &mut impl Cursor) -> Option<ParsingResult> {
                 let matched = match_str(self.cursor, pattern);
                 if matched {
                     *receiver = Some(read_line(self.cursor));
+                    self.cursor.read();
                     *self.line_read = true;
                 }
                 matched
@@ -136,12 +141,11 @@ pub fn parse(beginning: &mut impl Cursor) -> Option<ParsingResult> {
     line_beginning(end);
     let mut new_message_lines = Vec::new();
     loop {
-        println!("e");
         match categorize_line(end) {
             LineCategory::Special() => break,
             LineCategory::Regular() => new_message_lines.push(read_line(end)),
         }
-        end.back();
+        line_beginning(end);
         if !prev_line(end) {
             break;
         }
