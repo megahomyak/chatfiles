@@ -1,33 +1,48 @@
 pub trait Cursor {
-    #[must_use]
     fn prev(&mut self) -> Option<char>;
-    #[must_use]
     fn next(&mut self) -> Option<char>;
     fn end(&mut self);
 }
 
+pub enum LineKind {
+    Special(),
+    Regular(),
+}
+
+pub struct LineIter<'a, C: Cursor> {
+    cursor: &'a mut C,
+}
+
+impl<'a, C: Cursor> Iterator for LineIter<'a, C> {
+    type Item = char;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        next_real(self.cursor).and_then(|c| {
+            if c == '\n' {
+                prev_real(self.cursor);
+                None
+            } else {
+                Some(c)
+            }
+        })
+    }
+}
+
 pub struct ForwardLine<C: Cursor> {
     cursor: C,
+    kind: LineKind,
 }
 
 fn prev_real(cursor: &mut impl Cursor) -> Option<char> {
-    cursor.prev().and_then(|c| {
-        if c == '\r' {
-            cursor.prev()
-        } else {
-            Some(c)
-        }
-    })
+    cursor
+        .prev()
+        .and_then(|c| if c == '\r' { cursor.prev() } else { Some(c) })
 }
 
 fn next_real(cursor: &mut impl Cursor) -> Option<char> {
-    cursor.next().and_then(|c| {
-        if c == '\r' {
-            cursor.next()
-        } else {
-            Some(c)
-        }
-    })
+    cursor
+        .next()
+        .and_then(|c| if c == '\r' { cursor.next() } else { Some(c) })
 }
 
 fn line_beginning(cursor: &mut impl Cursor) {
@@ -39,30 +54,33 @@ fn line_beginning(cursor: &mut impl Cursor) {
     }
 }
 
-fn next_real_in_line(cursor: &mut impl Cursor) -> Option<char> {
-    next_real(cursor).and_then(|c| if c == '\n' {
-        prev_real(cursor);
-        None
-    } else {
-        Some(c)
-    })
-}
-
-impl<C: Cursor> Iterator for ForwardLine<C> {
-    type Item = char;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        next_real_in_line(&mut self.cursor)
+fn kind(cursor: &mut impl Cursor) -> LineKind {
+    if next_real(cursor) == Some('\\') {
+        if next_real(cursor) == Some('\\') {
+            prev_real(cursor).unwrap();
+        } else {
+            return LineKind::Special();
+        }
     }
+    LineKind::Regular()
 }
 
 impl<C: Cursor> ForwardLine<C> {
-    pub fn new(cursor: C) -> Self {
-        Self { cursor }
+    pub fn new(mut cursor: C) -> Self {
+        let kind = kind(&mut cursor);
+        Self { kind, cursor }
     }
-    pub fn next_line(mut self) -> Result<Self, BackLine<C>> {
+    pub fn kind(&self) -> &LineKind {
+        &self.kind
+    }
+    pub fn next(mut self) -> Result<Self, BackLine<C>> {
         while let Some(c) = next_real(&mut self.cursor) {
             if c == '\n' {
+                let ended = self.cursor.next().is_none();
+                self.cursor.prev().unwrap();
+                if ended {
+                    return Err(BackLine::new(self.cursor));
+                }
                 if self.cursor.next().is_some() {
                     self.cursor.prev().unwrap();
                     break;
@@ -71,81 +89,42 @@ impl<C: Cursor> ForwardLine<C> {
                 }
             }
         }
-        Ok(ForwardLine { cursor: self.cursor })
+        let _ = self.cursor.prev();
+    }
+    pub fn iter<'a>(&'a mut self) -> LineIter<'a, C> {
+        LineIter {
+            cursor: &mut self.cursor,
+        }
     }
     pub fn end(mut self) -> BackLine<C> {
         self.cursor.end();
         self.cursor.prev().unwrap();
         line_beginning(&mut self.cursor);
-        BackLine { cursor: self.cursor }
+        BackLine {
+            cursor: self.cursor,
+        }
     }
 }
 
 pub struct BackLine<C: Cursor> {
     cursor: C,
-}
-
-impl<C: Cursor> Iterator for BackLine<C> {
-    type Item = char;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        next_real_in_line(&mut self.cursor)
-    }
+    kind: LineKind,
 }
 
 impl<C: Cursor> BackLine<C> {
-    pub fn prev_line(self) -> Self {
+    fn new(mut cursor: C) -> Self {
+        line_beginning(&mut cursor);
+        let kind = kind(&mut cursor);
+        Self { kind, cursor }
+    }
+    pub fn prev(self) -> Option<Self> {
 
     }
-}
-
-pub struct LinesForward<'a, C: Cursor> {
-    cursor: &'a mut C,
-}
-
-impl<'a, C: Cursor> LinesForward<'a, C> {
-    pub fn new(cursor: &'a mut C) -> Self {
-        Self { cursor }
-    }
-    pub fn end(mut self) -> LinesBack<C> {
-    }
-}
-
-impl<'a, C: Cursor> Iterator for LinesForward<'a, C> {
-    type Item = &'a mut C;
-
-    fn next(&mut self) -> Option<Self::Item> {}
-}
-
-pub struct LinesBack<'a, C: Cursor> {
-    cursor: &'a mut C,
-}
-
-pub struct Line<'a, C: Cursor> {
-    cursor: &'a mut C,
-}
-
-impl<'a, C: Cursor> Iterator for Line<'a, C> {
-    type Item = char;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        match next_real(self.cursor) {
-            None => None,
-            Some(c) => {
-                if c == '\n' {
-                    prev_real(self.cursor).unwrap();
-                    None
-                } else {
-                    Some(c)
-                }
-            }
+    pub fn iter<'a>(&'a mut self) -> LineIter<'a, C> {
+        LineIter {
+            cursor: &mut self.cursor,
         }
     }
-}
-
-pub enum LineCategory {
-    Special(),
-    Regular(),
 }
 
 /*

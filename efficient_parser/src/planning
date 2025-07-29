@@ -21,6 +21,14 @@ line_back { next_char(&mut self) -> Result<char, ()>, prev_line() -> Result<line
 ->
 line_forward { next_line(self) -> Result<line_forward, line_back>, end(self) -> line_back } + Iterator<Item = char>
 line_back { prev_line(self) -> Option<line_back> } + Iterator<Item = char>
+->
+same, but with iter() to have nice next() and prev() without name collisions
+
+the last position is outlawed if it's a newline character (i.e. can: "<cursor>\n<EOF>", can't: "\n<cursor><EOF>"). since the "end()" may take me there and the "next()" may take me there, I think in both of them I should make the "\n" check. essentially, since in both cases I end up at "\n<cursor><EOF>", I need to check if that's the case (I need to go in two directions: forwards and backwards. if there's nothing forwards and an \n backwards, i need to return a signifying bool (signifying a move backwards into a stable position - did the move happen?); the bool will be ignored by the end() function, but used by next() to return a None)
+
+forward_line:
+* iter: obvious
+* next: going to the next line. are we at the end? if yes, switch to back_line
 
 ATTEMPT:
 nexter = make_nexter(cursor) <- control here
