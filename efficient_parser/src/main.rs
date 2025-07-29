@@ -1,7 +1,4 @@
-use std::{
-    collections::HashMap,
-    io::{Read, Seek, SeekFrom},
-};
+use std::io::{Read, Seek, SeekFrom};
 
 mod parser;
 
@@ -10,10 +7,10 @@ struct FileCursor<File: Seek + Read> {
 }
 
 impl<File: Seek + Read> parser::Cursor for FileCursor<File> {
-    fn back(&mut self) -> bool {
+    fn prev(&mut self) -> bool {
         self.file.seek(SeekFrom::Current(-1)).is_ok()
     }
-    fn read(&mut self) -> Option<char> {
+    fn next(&mut self) -> Option<char> {
         let mut c = 0;
         if self.file.read(std::array::from_mut(&mut c)).unwrap() == 0 {
             return None;
@@ -35,36 +32,46 @@ pub struct ParsingResult {
     pub new_message: Option<String>,
 }
 
-fn parse(mut line: parser::Line<impl parser::Cursor>) -> Option<ParsingResult> {
-    let mut config_kv = HashMap::new();
-    loop {
-        if let parser::LineCategory::Special() = line.categorize() {
-            let line_string: String = (&mut line).collect();
+fn parse(mut forward_line: parser::ForwardLine<impl parser::Cursor>) -> Option<ParsingResult> {
+    let mut room_name = None;
+    let mut server_ip = None;
+    let mut username = None;
+    let mut password = None;
+    let (room_name, server_ip, username, password, mut back_line) = loop {
+        if let parser::LineKind::Special() = forward_line.contents.kind {
+            let line_string: String = forward_line.contents.iter().collect();
             if let Some((command, arg)) = line_string.split_once('\\') {
                 if command == "config" {
                     let (k, v) = arg.split_once('\\')?;
-                    config_kv.insert(k.to_owned(), v.to_owned());
+                    let v = v.to_owned();
+                    if k == "room name" {
+                        room_name = Some(v);
+                    } else if k == "server ip" {
+                        server_ip = Some(v);
+                    } else if k == "username" {
+                        username = Some(v);
+                    } else if k == "password" {
+                        password = Some(v);
+                    }
+                    if room_name.is_some() && server_ip.is_some() && username.is_some() && password.is_some() {
+                        break (room_name.unwrap(), server_ip.unwrap(), username.unwrap(), password.unwrap(), forward_line.end());
+                    }
                 }
             }
-        } else {
-            break;
         }
-        if !line.next_line() {
-            break;
-        }
-    }
-    line.last_line();
+        forward_line = forward_line.next().ok()?;
+    };
     let mut new_message_lines = Vec::new();
     loop {
-        if let parser::LineCategory::Regular() = line.categorize() {
-            let line_string: String = (&mut line).collect();
-            new_message_lines.push(line_string);
+        if let parser::LineKind::Regular() = back_line.contents.kind {
+            new_message_lines.push(back_line.contents.iter().collect::<String>());
         } else {
             break;
         }
-        if !line.prev_line() {
-            break;
-        }
+        back_line = match back_line.prev() {
+            None => break,
+            Some(back_line) => back_line,
+        };
     }
     let new_message = if new_message_lines.len() == 0 {
         None
@@ -73,18 +80,18 @@ fn parse(mut line: parser::Line<impl parser::Cursor>) -> Option<ParsingResult> {
         Some(new_message_lines.join("\n"))
     };
     Some(ParsingResult {
-        room_name: config_kv.remove("room name")?,
-        server_ip: config_kv.remove("server ip")?,
-        username: config_kv.remove("username")?,
-        password: config_kv.remove("password")?,
+        room_name,
+        server_ip,
+        username,
+        password,
         new_message,
     })
 }
 
 fn main() {
     let chatfile_path = std::env::args().nth(1).unwrap();
-    let line = parser::Line::new(FileCursor {
+    let forward_line = parser::ForwardLine::from_text_beginning(FileCursor {
         file: std::fs::File::open(chatfile_path).unwrap(),
     });
-    println!("{:#?}", parse(line));
+    println!("{:#?}", parse(forward_line));
 }
