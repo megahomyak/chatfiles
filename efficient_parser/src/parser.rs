@@ -1,29 +1,33 @@
 pub trait Cursor {
+    #[must_use]
     fn prev(&mut self) -> Option<char>;
+    #[must_use]
     fn next(&mut self) -> Option<char>;
     fn end(&mut self);
 }
 
+pub struct ForwardLine<C: Cursor> {
+    cursor: C,
+}
+
 fn prev_real(cursor: &mut impl Cursor) -> Option<char> {
-    match cursor.prev() {
-        None => None,
-        Some(c) => if c == '\r' {
+    cursor.prev().and_then(|c| {
+        if c == '\r' {
             cursor.prev()
         } else {
             Some(c)
-        },
-    }
+        }
+    })
 }
 
 fn next_real(cursor: &mut impl Cursor) -> Option<char> {
-    match cursor.next() {
-        None => None,
-        Some(c) => if c == '\r' {
+    cursor.next().and_then(|c| {
+        if c == '\r' {
             cursor.next()
         } else {
             Some(c)
-        },
-    }
+        }
+    })
 }
 
 fn line_beginning(cursor: &mut impl Cursor) {
@@ -32,6 +36,66 @@ fn line_beginning(cursor: &mut impl Cursor) {
             cursor.next().unwrap();
             break;
         }
+    }
+}
+
+fn next_real_in_line(cursor: &mut impl Cursor) -> Option<char> {
+    next_real(cursor).and_then(|c| if c == '\n' {
+        prev_real(cursor);
+        None
+    } else {
+        Some(c)
+    })
+}
+
+impl<C: Cursor> Iterator for ForwardLine<C> {
+    type Item = char;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        next_real_in_line(&mut self.cursor)
+    }
+}
+
+impl<C: Cursor> ForwardLine<C> {
+    pub fn new(cursor: C) -> Self {
+        Self { cursor }
+    }
+    pub fn next_line(mut self) -> Result<Self, BackLine<C>> {
+        while let Some(c) = next_real(&mut self.cursor) {
+            if c == '\n' {
+                if self.cursor.next().is_some() {
+                    self.cursor.prev().unwrap();
+                    break;
+                } else {
+                    return Err(self.end());
+                }
+            }
+        }
+        Ok(ForwardLine { cursor: self.cursor })
+    }
+    pub fn end(mut self) -> BackLine<C> {
+        self.cursor.end();
+        self.cursor.prev().unwrap();
+        line_beginning(&mut self.cursor);
+        BackLine { cursor: self.cursor }
+    }
+}
+
+pub struct BackLine<C: Cursor> {
+    cursor: C,
+}
+
+impl<C: Cursor> Iterator for BackLine<C> {
+    type Item = char;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        next_real_in_line(&mut self.cursor)
+    }
+}
+
+impl<C: Cursor> BackLine<C> {
+    pub fn prev_line(self) -> Self {
+
     }
 }
 
@@ -44,19 +108,13 @@ impl<'a, C: Cursor> LinesForward<'a, C> {
         Self { cursor }
     }
     pub fn end(mut self) -> LinesBack<C> {
-        self.cursor.end();
-        self.cursor.prev();
-        line_beginning(self.cursor);
-        LinesBack { cursor: self.cursor }
     }
 }
 
 impl<'a, C: Cursor> Iterator for LinesForward<'a, C> {
     type Item = &'a mut C;
 
-    fn next(&mut self) -> Option<Self::Item> {
-
-    }
+    fn next(&mut self) -> Option<Self::Item> {}
 }
 
 pub struct LinesBack<'a, C: Cursor> {
@@ -73,12 +131,14 @@ impl<'a, C: Cursor> Iterator for Line<'a, C> {
     fn next(&mut self) -> Option<Self::Item> {
         match next_real(self.cursor) {
             None => None,
-            Some(c) => if c == '\n' {
-                prev_real(self.cursor).unwrap();
-                None
-            } else {
-                Some(c)
-            },
+            Some(c) => {
+                if c == '\n' {
+                    prev_real(self.cursor).unwrap();
+                    None
+                } else {
+                    Some(c)
+                }
+            }
         }
     }
 }

@@ -19,8 +19,8 @@ prever { prev_line() -> Result<line_back, ()> }
 line_forward { next_char(&mut self) -> Result<char, ()>, next_line() -> Result<line_forward, line_back>, end() -> line_back }
 line_back { next_char(&mut self) -> Result<char, ()>, prev_line() -> Result<line_back, ()> }
 ->
-line_forward { next_line() -> Result<line_forward, line_back>, end() -> line_back } + Iterator<Item = char>
-line_back { prev_line() -> Option<line_back> } + Iterator<Item = char>
+line_forward { next_line(self) -> Result<line_forward, line_back>, end(self) -> line_back } + Iterator<Item = char>
+line_back { prev_line(self) -> Option<line_back> } + Iterator<Item = char>
 
 ATTEMPT:
 nexter = make_nexter(cursor) <- control here
