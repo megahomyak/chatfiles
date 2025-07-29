@@ -1,0 +1,41 @@
+since control needs to travel, so should ownership
+
+control:
+* getting the first line
+* iterating over the first line
+* getting the next line
+* ...
+
+initially, control is in the line char, we can either advance once or skip to the next line
+not only can we advance once (gives control to next line char) or skip to the next line (gives control to next line, if doesn't exist - it's as if we called "end"), we can also start going from the end (gives control to BackLines)
+
+control flow: line -> nexter -> prever ; it is possible to jump from any point in the control flow to any further point. likely done through methods on types that will get to the next type, but that operation alone probably shouldn't do stuff UNLESS the stuff's inevitable
+actually, line_forward -> nexter -> line_backwards -> prever
+line_forward { next_char(&mut self) -> Result<char, ()>, end() -> nexter }
+nexter { next_line() -> Result<line_forward, line_back>, end() -> line_back }
+line_back { next_char(&mut self) -> Result<char, ()>, end() -> prever }
+prever { prev_line() -> Result<line_back, ()> }
+->
+line_forward { next_char(&mut self) -> Result<char, ()>, next_line() -> Result<line_forward, line_back>, end() -> line_back }
+line_back { next_char(&mut self) -> Result<char, ()>, prev_line() -> Result<line_back, ()> }
+->
+line_forward { next_line() -> Result<line_forward, line_back>, end() -> line_back } + Iterator<Item = char>
+line_back { prev_line() -> Option<line_back> } + Iterator<Item = char>
+
+ATTEMPT:
+nexter = make_nexter(cursor) <- control here
+prever = loop {
+    match nexter.next() {
+        impossible(prever) => break prever, <- control here
+        possible((kind, line)) => { <- control here
+            if kind is special {
+                nexter = loop {
+                    match line.next() {
+                        impossible(nexter) => break nexter,
+                        possible(char) => ...,
+                    }
+                };
+            }
+        },
+    }
+};
