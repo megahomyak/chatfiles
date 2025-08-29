@@ -1,3 +1,5 @@
+INVOKE "server/add_user.sh" BEFORE RUNNING THE SERVER, OTHERWISE IT WON'T START UP! THERE HAS TO BE AT LEAST ONE USER!
+
 This is a simple implementation of a chat server that employs chatfiles both for client-side and server-side storage.
 
 Before I begin: a "footer" is a special line put at the end of a message, like this:
