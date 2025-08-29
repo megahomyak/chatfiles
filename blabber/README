@@ -1,0 +1,38 @@
+This is a simple implementation of a chat server that employs chatfiles both for client-side and server-side storage.
+
+Before I begin: a "footer" is a special line put at the end of a message, like this:
+
+my message goes here
+and here
+\information about who sent this, when, etc.
+
+There are two parties in this exchange: a central server and a client. Clients are supposed to trust the server in everything, but the server is not supposed to trust any clients. The special lines can only be created by the server, so they can be trusted. Clients and servers both exchange HTTP messages. Here's a minimal request from a client:
+
+POST /rooms/roomname.txt HTTP/1.1\r\n
+Authorization: Basic dXNlcm5hbWU6cGFzc3dvcmQK\r\n
+Range: bytes=341-\r\n
+\r\n
+This is my message in the request's body! May be empty if there's no new message, but may be present regardless.
+
+Some commentaries on the client's request: the range is supposed to only have the lower boundary, the upper boundary should be ignored.
+
+And here's a minimal response from the server:
+
+HTTP/1.1 206 Partial Content\r\n
+\r\n
+<messages in the user-specified range>
+
+What the server is supposed to do upon a new request:
+* Validate credentials, room file name and lower bound of Range (bytes)
+* Validate the new message: it shouldn't contain a line that starts with "\" but doesn't start with "\\" (not Unix lines, EOF should also be a line terminator)
+* If the new message isn't empty, emit a footer for it (mind the newlines! We don't want a special line to be appended to a regular one!)
+* If the room file exists, emit the room file from the specified Range lower bound (beware of data races here, btw)
+* If the new message isn't empty, create the room file if it does not exist and append the new message into the room file, then append the footer
+
+What the client is supposed to do upon an invocation:
+* Get the offset of the beginning of the new message (the new message may be empty; e.g. quick maths: `offset <- file_size(file) - count_bytes(lines_backwards(file))`)
+* Send a request to the server with own credentials, the offset, the room file name and the contents of the room file from the offset onwards in the request's body
+* Validate that the server responded with a 2** status code
+* Append the response body into the room file
+
+My server and client implementations aren't exactly compliant with the above spec due to compatibility issues, but the underlying concepts are identical, it's only the protocol that's different
