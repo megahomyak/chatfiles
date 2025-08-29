@@ -6,7 +6,7 @@ my message goes here
 and here
 \information about who sent this, when, etc.
 
-There are two parties in this exchange: a central server and a client. Clients are supposed to trust the server in everything, but the server is not supposed to trust any clients. The special lines can only be created by the server, so they can be trusted. Clients and servers both exchange HTTP messages. Here's a minimal request from a client:
+There are two parties in this exchange: a central server and a client. Clients are supposed to trust the server in everything, but the server is not supposed to trust any clients, nor are the clients supposed to trust each other. The special lines can only be created by the server, so they can be trusted. Clients and servers both exchange HTTP messages. Here's a minimal request from a client:
 
 POST /rooms/roomname.txt HTTP/1.1\r\n
 Authorization: Basic dXNlcm5hbWU6cGFzc3dvcmQK\r\n
@@ -36,3 +36,8 @@ What the client is supposed to do upon an invocation:
 * Append the response body into the room file
 
 My server and client implementations aren't exactly compliant with the above spec due to compatibility issues, but the underlying concepts are identical, it's only the protocol that's different
+
+Built-in privacy features (from other members, the server is a trusted entity here):
+* Room names can contain UUIDs making it practically impossible to have a third party enter a room
+* People have to be granted access by the admin to use a node
+* People can't write from an account of another user
