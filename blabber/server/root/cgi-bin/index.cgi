@@ -3,8 +3,13 @@ set -euxo pipefail
 current_user="$REMOTE_USER"
 room_file_offset="$HTTP_X_ROOM_FILE_OFFSET"
 room_file_name="$HTTP_X_ROOM_FILE_NAME"
-if [ "$(dirname -- $(realpath -- "$room_file_name"))" != "$(pwd)" ] || ! [[ "$room_file_offset" =~ ^[0-9]+$ ]]; then
+exit_bad_request() {
+    echo "Status: 400 Bad Request"
+    echo ""
     exit 1
+}
+if [ "$(dirname -- $(realpath -- "$room_file_name"))" != "$(pwd)" ] || ! [[ "$room_file_offset" =~ ^[0-9]+$ ]]; then
+    exit_bad_request
 fi
 subdirred() {
     subdir_name="$1"
@@ -19,7 +24,7 @@ temp_file_path="$(subdirred temps)"
     flock -x "$lock_fd"
     (trap 'rm -f "$temp_file_path"' EXIT; cat > "$temp_file_path"
         if grep -qE '^\\[^\\]' < "$temp_file_path"; then
-            exit 1
+            exit_bad_request
         fi
         echo "Status: 200 OK"
         echo ""
