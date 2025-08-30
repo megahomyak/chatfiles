@@ -6,7 +6,6 @@ room_file_name="$HTTP_X_ROOM_FILE_NAME"
 if [ "$(dirname -- $(realpath -- "$room_file_name"))" != "$(pwd)" ] || ! [[ "$room_file_offset" =~ ^[0-9]+$ ]]; then
     exit 1
 fi
-server_state="$(pwd)/../../state"
 subdirred() {
     subdir_name="$1"
     subdir_path="$server_state/$subdir_name"
