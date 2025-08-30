@@ -1,5 +1,5 @@
 #!/bin/bash
-set -euo pipefail
+set -euxo pipefail
 current_user="$REMOTE_USER"
 room_file_offset="$HTTP_X_ROOM_FILE_OFFSET"
 room_file_name="$HTTP_X_ROOM_FILE_NAME"
