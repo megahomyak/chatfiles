@@ -4,8 +4,7 @@ current_user="$REMOTE_USER"
 room_file_offset="$HTTP_X_ROOM_FILE_OFFSET"
 room_file_name="$HTTP_X_ROOM_FILE_NAME"
 emit_bad_request() {
-    echo "Status: 400 Bad Request"
-    echo ""
+    printf "Status: 400 Bad Request\n\n"
 }
 if [ "$(dirname -- $(realpath -- "$room_file_name"))" != "$(pwd)" ] || ! [[ "$room_file_offset" =~ ^[0-9]+$ ]]; then
     emit_bad_request
@@ -14,7 +13,7 @@ else
         subdir_name="$1"
         subdir_path="$server_state/$subdir_name"
         mkdir -p -- "$subdir_path"
-        echo "$subdir_path/$room_file_name"
+        printf "%s" "$subdir_path/$room_file_name"
     }
     room_file_path="$(subdirred rooms)"
     lock_file_path="$(subdirred locks)"
@@ -25,11 +24,9 @@ else
             if grep -qE '^\\[^\\]|^\\$' < "$temp_file_path"; then
                 emit_bad_request
             else
-                echo "Status: 200 OK"
-                echo ""
+                printf "Status: 200 OK\n\n"
                 emit_footer() {
-                    echo ""
-                    echo "\\$current_user @ $(LANG=c date --utc -r "$temp_file_path")"
+                    printf "\n%s @ %s\n" "$current_user" "$(LANG=c date --utc -r "$temp_file_path")"
                 }
                 if [ -s "$temp_file_path" ]; then
                     emit_footer
