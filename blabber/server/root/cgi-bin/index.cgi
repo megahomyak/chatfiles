@@ -26,7 +26,7 @@ else
             else
                 printf "Status: 200 OK\n\n"
                 emit_footer() {
-                    printf "\n%s @ %s\n" "$current_user" "$(LANG=c date --utc -r "$temp_file_path")"
+                    printf "\n\\%s @ %s\n" "$current_user" "$(LANG=c date --utc -r "$temp_file_path")"
                 }
                 if [ -s "$temp_file_path" ]; then
                     emit_footer
