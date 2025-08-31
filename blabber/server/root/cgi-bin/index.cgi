@@ -21,7 +21,7 @@ else
     (trap 'rm -f "$lock_file_path"' EXIT; exec {lock_fd}> "$lock_file_path"
         flock -x "$lock_fd"
         (trap 'rm -f "$temp_file_path"' EXIT; cat > "$temp_file_path"
-            if grep -qE '^\\[^\\]|^\\$' < "$temp_file_path"; then
+            if grep -qE '^\\' < "$temp_file_path"; then
                 emit_bad_request
             else
                 printf "Status: 200 OK\n\n"
@@ -35,7 +35,7 @@ else
                     dd "if=$room_file_path" skip=$room_file_offset iflag=skip_bytes status=none
                 fi
                 if [ -s "$temp_file_path" ]; then
-                    { cat "$temp_file_path" ; emit_footer; } >> "$room_file_path"
+                    { cat "$temp_file_path"; emit_footer; } >> "$room_file_path"
                 fi
             fi
         )
