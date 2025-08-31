@@ -24,7 +24,7 @@ HTTP/1.1 206 Partial Content\r\n
 
 What the server is supposed to do upon a new request:
 * Validate credentials, room file name and lower bound of Range (bytes)
-* Validate the new message: it shouldn't contain a line that starts with "\" but doesn't start with "\\" (not Unix lines, EOF should also be a line terminator)
+* Validate the new message: it shouldn't contain a line that starts with "\" (not Unix lines, EOF should also be a line terminator)
 * If the new message isn't empty, emit a footer for it (mind the newlines! We don't want a special line to be appended to a regular one!)
 * If the room file exists, emit the room file from the specified Range lower bound (beware of data races here, btw)
 * If the new message isn't empty, create the room file if it does not exist and append the new message into the room file, then append the footer
