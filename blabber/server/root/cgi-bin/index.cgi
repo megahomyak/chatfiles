@@ -29,7 +29,7 @@ else
                 echo ""
                 emit_footer() {
                     echo ""
-                    echo "\\$current_user @ $(LANG=c date --utc)"
+                    echo "\\$current_user @ $(LANG=c date --utc -r "$temp_file_path")"
                 }
                 if [ -s "$temp_file_path" ]; then
                     emit_footer
