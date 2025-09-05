@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 import os, fcntl, http.server, hashlib, datetime, shutil, sys, getpass, json
 with open(os.environ["blabber_credfile"], "a+") as credfile:
     if sys.argv[1] == "serve":

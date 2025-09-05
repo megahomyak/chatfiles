@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 import sys, os, fcntl, urllib.request, json
 room_file_path = sys.argv[1]
 with open(room_file_path, "a+") as room_file:
