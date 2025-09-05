@@ -6,15 +6,15 @@ with open(os.environ["blabber_credfile"], "a+") as credfile:
         password_lines = credfile.read().splitlines()
         class Handler(http.server.BaseHTTPRequestHandler):
             def do_POST(self):
+                request = self.rfile.readline()
+                request["offset"]
+                request["new_message"]
+                request["creds"]
                 username, password = base64.b64decode(self.headers["Authorization"].split("Basic", 1)[1].lstrip()).decode().split(":")
                 assert "{username}:{password_hash}".format(username=username, password_hash=hashlib.sha256(password.encode()).hexdigest()) in password_lines
                 room_file_offset = int(self.headers["Range"].split("bytes=", 1)[1].split("-")[0])
                 room_file_path = os.path.basename(self.path.split("/", 1)[1])
-                print(1)
-                while True:
-                    print(self.rfile.read(1))
-                new_message = self.rfile.read()
-                print(2)
+                #new_message = self.rfile.read()
                 assert all(not line.startswith(b"\\") for line in new_message.splitlines())
                 self.send_response(200)
                 self.end_headers()
