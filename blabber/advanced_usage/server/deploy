@@ -2,6 +2,7 @@
 SERVER_NAME=orange
 DIRECTORY_PATH=/root/chatfiles
 ssh $SERVER_NAME << EOF
+mkdir -p blabber_state
 git init $DIRECTORY_PATH -b master
 cd $DIRECTORY_PATH
 git config receive.denyCurrentBranch updateInstead
@@ -10,8 +11,8 @@ git remote add deployment $SERVER_NAME:$DIRECTORY_PATH
 git push deployment master --force
 git remote remove deployment
 ssh $SERVER_NAME << EOF
-cd $DIRECTORY_PATH/blabber/server
+cd $DIRECTORY_PATH/blabber/advanced_usage/server
 docker build . -t modern-blabber
 docker rm -f modern-blabber || true
-docker run -d -p 127.0.0.1:8014:80 -v ./state:/app/state --name modern-blabber --restart unless-stopped modern-blabber
+docker run -d -p 127.0.0.1:8014:80 -v ~/blabber_state:/app/state --name modern-blabber --restart unless-stopped modern-blabber
 EOF

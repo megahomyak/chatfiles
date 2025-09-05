@@ -2,9 +2,9 @@
 # The dumbest way I found to make this thing. Just leave it running in the background
 set -euo pipefail
 while : ; do
-    notification="$(./client.sh "$@" | tail)"
+    notification="$(./client.py "$@" | tail)"
     if [ "$notification" != "" ]; then
-        termux-notification -t blabber -c "$notification"
+        notify-send -a blabber -- "$notification"
     fi
     sleep 5
 done
