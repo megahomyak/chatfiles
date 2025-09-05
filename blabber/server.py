@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import os, fcntl, http.server, hashlib, datetime, shutil, sys, getpass, json
-with open(os.environ["blabber_credfile"], "a+") as credfile:
+with open(os.environ["blabber_credfile"], "a+", encoding="utf-8") as credfile:
     if sys.argv[1] == "serve":
         credfile.seek(0)
         password_lines = credfile.read().splitlines()
