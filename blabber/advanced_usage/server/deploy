@@ -12,7 +12,7 @@ git push deployment master --force
 git remote remove deployment
 ssh $SERVER_NAME << EOF
 cd $DIRECTORY_PATH/blabber/advanced_usage/server
-docker build . -t modern-blabber
+docker build ../.. -t modern-blabber -f ./Dockerfile
 docker rm -f modern-blabber || true
 docker run -d -p 127.0.0.1:8014:80 -v ~/blabber_state:/app/state --name modern-blabber --restart unless-stopped modern-blabber
 EOF
