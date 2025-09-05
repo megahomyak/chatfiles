@@ -1,6 +1,5 @@
-FROM alpine:3.20
+FROM python:3.13.7-alpine3.21
 WORKDIR /app
-RUN apk add --no-cache python3
 ENV blabber_host=0.0.0.0
 ENV blabber_port=80
 ENV blabber_credfile=../credfile
