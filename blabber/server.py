@@ -3,7 +3,7 @@ import os, fcntl, http.server, hashlib, datetime, shutil, sys, getpass, json
 with open(os.environ["blabber_credfile"], "a+", encoding="utf-8") as credfile:
     if sys.argv[1] == "serve":
         credfile.seek(0)
-        password_lines = credfile.read().splitlines()
+        password_lines = set(credfile.read().splitlines())
         class Handler(http.server.BaseHTTPRequestHandler):
             def do_POST(self):
                 req = json.loads(self.rfile.readline())
