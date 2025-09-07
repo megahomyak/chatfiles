@@ -1,19 +1,21 @@
 #!/usr/bin/env python3
-import os, fcntl, http.server, hashlib, datetime, shutil, json
-password_lines = set(open(os.environ["blabber_credfile"], "r", encoding="utf-8").read().splitlines())
+import os, fcntl, http.server, hashlib, datetime, shutil, base64
+password_lines = set(open(os.environ["blabber_credfile"], "rb").read().splitlines())
 class Handler(http.server.BaseHTTPRequestHandler):
     def do_POST(self):
-        req = json.loads(self.rfile.readline())
-        assert "{username}:{password_hash}".format(username=req["username"], password_hash=hashlib.sha256(req["password"].encode("utf-8")).hexdigest()) in password_lines
-        assert req["room"] == os.path.basename(req["room"])
-        assert all(not line.startswith("\\") for line in req["msg"].splitlines())
+        msg = self.rfile.read(int(self.headers["Content-Length"]))
+        username, password = base64.b64decode(self.headers["Authorization"].split("Basic ", 1)[1]).split(b":")
+        room_name = self.path.split("/rooms/", 1)[1]
+        assert username + b":" + hashlib.sha256(password).hexdigest().encode("ascii") in password_lines
+        assert room_name == os.path.basename(room_name)
+        assert all(not line.startswith(b"\\") for line in msg.splitlines())
         self.send_response(200)
         self.end_headers()
-        footer = "\n\\{username} @ {datetime}\n".format(username=req["username"], datetime=datetime.datetime.now(datetime.timezone.utc)).encode("utf-8")
-        if req["msg"]: self.wfile.write(footer)
-        with open(req["room"], "a+b" if req["msg"] else "rb") as room_file: # This may throw, that's intended
+        footer = b"\n\\" + username + b" @ " + str(datetime.datetime.now(datetime.timezone.utc)).encode("ascii") + b"\n"
+        if msg: self.wfile.write(footer)
+        with open(room_name, "a+b" if msg else "rb") as room_file: # This may throw, that's intended
             fcntl.flock(room_file, fcntl.LOCK_EX)
-            room_file.seek(req["offset"])
+            room_file.seek(int(self.headers["Range"].split("bytes=", 1)[1].split("-", 1)[0]))
             shutil.copyfileobj(room_file, self.wfile)
-            if req["msg"]: room_file.write(req["msg"].encode("utf-8") + footer)
+            if msg: room_file.write(msg + footer)
 http.server.HTTPServer((os.environ["blabber_host"], int(os.environ["blabber_port"])), Handler).serve_forever()
