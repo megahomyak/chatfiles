@@ -1,4 +1,4 @@
-blabber_flags="blabber_username=USERNAME blabber_password=PASSWORD blabber_url=URL"
+blabber_flags="blabber_creds=USERNAME:PASSWORD blabber_url=URL"
 blabber_repo="REPO_PATH"
 blabber_device="pc OR termux"
 blabu() {
