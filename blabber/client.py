@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-import sys, os, fcntl, urllib.request, json, io
+import sys, os, fcntl, urllib.request, io, base64
 room_file_path = sys.argv[1]
 with open(room_file_path, "a+b") as room_file:
     fcntl.flock(room_file, fcntl.LOCK_EX)
-    for i in range(room_file.tell()-1, -1, -1):
+    end_offset = room_file.tell()
+    for i in range(end_offset - 1, -1, -1):
         room_file.seek(i)
         chunk = room_file.read(2)
         if chunk == b"\n\\" or (i == 0 and chunk.startswith(b"\\")):
@@ -12,8 +13,7 @@ with open(room_file_path, "a+b") as room_file:
         else:
             room_file.seek(i)
     new_message_offset = room_file.tell()
-    with io.TextIOWrapper(room_file, encoding="utf-8") as room_file:
-        with io.TextIOWrapper(urllib.request.urlopen(urllib.request.Request(os.environ["blabber_url"], data=(json.dumps({"offset": new_message_offset, "msg": room_file.read(), "room": os.path.basename(room_file_path), "password": os.environ["blabber_password"], "username": os.environ["blabber_username"]}) + "\n").encode("utf-8"))), encoding="utf-8") as response:
-            for chunk in iter(lambda: response.read(4096), ""):
-                sys.stdout.write(chunk)
-                room_file.write(chunk)
+    with urllib.request.urlopen(urllib.request.Request(os.environ["blabber_url"] + "/rooms/" + os.path.basename(room_file_path), headers={"Range": "bytes={}-".format(new_message_offset), "Content-Length": end_offset - new_message_offset, "Authorization": b"Basic " + base64.b64encode(os.environb[b"blabber_creds"])}, data=room_file)) as response:
+        for chunk in iter(lambda: response.read(4096), b""):
+            sys.stdout.buffer.write(chunk)
+            room_file.write(chunk)

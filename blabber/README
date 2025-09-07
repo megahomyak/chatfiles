@@ -11,6 +11,7 @@ There are two parties in this exchange: a central server and a client. Clients a
 POST /rooms/roomname.txt HTTP/1.1\r\n
 Authorization: Basic dXNlcm5hbWU6cGFzc3dvcmQK\r\n
 Range: bytes=341-\r\n
+Content-Length: <number here>\r\n
 \r\n
 This is my message in the request's body! May be empty if there's no new message, but may be present regardless.
 
@@ -19,6 +20,7 @@ Some commentaries on the client's request: the range is supposed to only have th
 And here's a minimal response from the server:
 
 HTTP/1.1 206 Partial Content\r\n
+Content-Length: <number here>\r\n // Is it necessary? My current impl works without it
 \r\n
 <messages in the user-specified range>
 
@@ -34,8 +36,6 @@ What the client is supposed to do upon an invocation:
 * Send a request to the server with own credentials, the offset, the room file name and the contents of the room file from the offset onwards in the request's body
 * Validate that the server responded with a 2** status code
 * Append the response body into the room file
-
-My server and client implementations aren't exactly compliant with the above spec due to compatibility issues, but the underlying concepts are identical, it's only the protocol that's different
 
 Built-in privacy features (from other members, the server is a trusted entity here):
 * Room names can contain UUIDs making it practically impossible to have a third party enter a room
