@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
-import sys, os, fcntl, urllib.request, io, base64
+import sys, os, urllib.request, io, base64
 room_file_path = sys.argv[1]
 with open(room_file_path, "a+b") as room_file:
-    fcntl.flock(room_file, fcntl.LOCK_EX)
     end_offset = room_file.tell()
     for i in range(end_offset - 1, -1, -1):
         room_file.seek(i)
