@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import os, fcntl, http.server, hashlib, datetime, shutil, sys, getpass, base64
+import os, http.server, hashlib, datetime, shutil, sys, getpass, base64
 with open(os.environ["blabber_credfile"], "a+b") as credfile:
     if sys.argv[1] == "serve":
         credfile.seek(0)
@@ -17,7 +17,6 @@ with open(os.environ["blabber_credfile"], "a+b") as credfile:
                 footer = b"\n\\" + username + b" @ " + str(datetime.datetime.now(datetime.timezone.utc)).encode("ascii") + b"\n"
                 if msg: self.wfile.write(footer)
                 with open(room_name, "a+b" if msg else "rb") as room_file: # This may throw, that's intended
-                    fcntl.flock(room_file, fcntl.LOCK_EX)
                     room_file.seek(int(self.headers["Range"].split("bytes=", 1)[1].split("-", 1)[0]))
                     shutil.copyfileobj(room_file, self.wfile)
                     if msg: room_file.write(msg + footer)
