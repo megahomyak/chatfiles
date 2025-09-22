@@ -13,7 +13,7 @@ with open(room_file_path, "a+b") as room_file:
             room_file.seek(i)
     new_message_offset = room_file.tell()
     try:
-        with urllib.request.urlopen(urllib.request.Request(os.environ["blabber_url"] + "/rooms/" + os.path.basename(room_file_path), headers={"Range": "bytes={}-".format(new_message_offset), "Content-Length": end_offset - new_message_offset, "Authorization": b"Basic " + base64.b64encode(os.environb[b"blabber_creds"])}, data=room_file)) as response:
+        with urllib.request.urlopen(urllib.request.Request(os.environ["blabber_url"] + "/rooms/" + os.path.basename(room_file_path), headers={"Range": "bytes={}-".format(new_message_offset), "Content-Length": end_offset - new_message_offset, "Authorization": b"Basic " + base64.b64encode(os.environ["blabber_creds"].encode("utf-8"))}, data=room_file)) as response:
             for chunk in iter(lambda: response.read(4096), b""):
                 sys.stdout.buffer.write(chunk)
                 room_file.write(chunk)
