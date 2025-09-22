@@ -1,3 +1,5 @@
+BEWARE: the author is currently very tired and can't write a good README given the current rapid changes; please, contact the author in order to get an explanation of all this crap
+
 This is a simple implementation of a chat server that employs chatfiles both for client-side and server-side storage.
 
 Before I begin: a "footer" is a special line put at the end of a message, like this:
@@ -22,19 +24,6 @@ And here's a minimal response from the server:
 HTTP/1.1 206 Partial Content\r\n
 \r\n
 <messages in the user-specified range>
-
-What the server is supposed to do upon a new request:
-* Validate credentials, room file name and lower bound of Range (bytes)
-* Validate the new message: it shouldn't contain a line that starts with "\" (not Unix lines, EOF should also be a line terminator)
-* If the new message isn't empty, emit a footer for it (mind the newlines! We don't want a special line to be appended to a regular one!)
-* If the room file exists, emit the room file from the specified Range lower bound (beware of data races here, btw)
-* If the new message isn't empty, create the room file if it does not exist and append the new message into the room file, then append the footer
-
-What the client is supposed to do upon an invocation:
-* Get the offset of the beginning of the new message (the new message may be empty; e.g. quick maths: `offset <- file_size(file) - count_bytes(lines_backwards(file))`)
-* Send a request to the server with own credentials, the offset, the room file name and the contents of the room file from the offset onwards in the request's body
-* Validate that the server responded with a 2** status code
-* Append the response body into the room file
 
 Built-in privacy features (privacy from other members, the server is a trusted entity here):
 * Room names can contain UUIDs making it practically impossible to have a third party enter a room

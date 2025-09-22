@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 import sys, os, urllib.request, urllib.error, io, base64
 room_file_path = sys.argv[1]
-with open(room_file_path, "a+b") as room_file:
-    end_offset = room_file.tell()
+with os.fdopen(os.open(room_file_path, os.O_RDWR | os.O_CREAT, 0o664), "r+b") as room_file:
+    end_offset = room_file.seek(0, os.SEEK_END)
     for i in range(end_offset - 1, -1, -1):
         room_file.seek(i)
         chunk = room_file.read(2)
@@ -14,6 +14,7 @@ with open(room_file_path, "a+b") as room_file:
     new_message_offset = room_file.tell()
     try:
         with urllib.request.urlopen(urllib.request.Request(os.environ["blabber_url"] + "/rooms/" + os.path.basename(room_file_path), headers={"Range": "bytes={}-".format(new_message_offset), "Content-Length": end_offset - new_message_offset, "Authorization": b"Basic " + base64.b64encode(os.environ["blabber_creds"].encode("utf-8"))}, data=room_file)) as response:
+            room_file.seek(new_message_offset)
             for chunk in iter(lambda: response.read(4096), b""):
                 sys.stdout.buffer.write(chunk)
                 room_file.write(chunk)
