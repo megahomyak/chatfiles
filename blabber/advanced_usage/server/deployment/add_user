@@ -1,0 +1,9 @@
+#!/bin/bash
+set -euo pipefail
+(scp orange:blabber_state/credfile . ; trap 'rm credfile' EXIT
+    password="$(uuidgen)"
+    blabber_credfile=credfile ../../../server.py add_user "$1" <<< "$password"
+    scp credfile orange:blabber_state/.
+    ./deploy
+    printf '%s\n' "$1:$password"
+)

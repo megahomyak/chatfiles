@@ -46,5 +46,5 @@ with open(os.environ["blabber_credfile"], "a+b") as credfile:
                 except UserError: pass
         http.server.HTTPServer((os.environ["blabber_host"], int(os.environ["blabber_port"])), Handler).serve_forever()
     elif sys.argv[1] == "add_user":
-        credfile.write("{username}:{password}\n".format(username=sys.argv[2], password=hashlib.sha256(getpass.getpass().encode("utf-8")).hexdigest()).encode("utf-8"))
+        credfile.write("{username}:{password}\n".format(username=sys.argv[2], password=hashlib.sha256((getpass.getpass() if sys.stdin.isatty() else input()).encode("utf-8")).hexdigest()).encode("utf-8"))
     else: raise Exception("Unknown command \"{}\"".format(sys.argv[1]))
