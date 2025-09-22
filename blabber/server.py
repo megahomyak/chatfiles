@@ -37,7 +37,7 @@ with open(os.environ["blabber_credfile"], "a+b") as credfile:
                     self._begin_response_body(200, "OK")
                     try:
                         with open(room_name, "a+b" if msg else "rb") as room_file:
-                            if msg: room_file.write(msg + (b"\n\\" + username + b" @ " + str(datetime.datetime.now(datetime.timezone.utc)).encode("ascii") + b"\n"))
+                            if msg: room_file.write(msg + (b"\n\\" + username + b" @ " + datetime.datetime.now(datetime.timezone.utc).isoformat().encode("ascii") + b"\n"))
                             room_file.seek(room_internal_offset)
                             shutil.copyfileobj(room_file, self.wfile)
                     except FileNotFoundError: pass
