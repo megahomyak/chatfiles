@@ -36,7 +36,7 @@ What the client is supposed to do upon an invocation:
 * Validate that the server responded with a 2** status code
 * Append the response body into the room file
 
-Built-in privacy features (from other members, the server is a trusted entity here):
+Built-in privacy features (privacy from other members, the server is a trusted entity here):
 * Room names can contain UUIDs making it practically impossible to have a third party enter a room
 * People have to be granted access by the admin to use a node
 * People can't write from an account of another user
