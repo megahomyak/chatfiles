@@ -6,7 +6,7 @@ with os.fdopen(os.open(room_file_path, os.O_RDWR | os.O_CREAT, 0o664), "r+b") as
     for i in range(end_offset - 1, -1, -1):
         room_file.seek(i)
         chunk = room_file.read(2)
-        if chunk == b"\n\\" or (i == 0 and chunk.startswith(b"\\")):
+        if chunk == b"\n\\":
             room_file.readline()
             break
         else:
