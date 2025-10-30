@@ -35,11 +35,13 @@ with open(os.environ["blabber_credfile"], "a+b") as credfile:
                     with UserErrorChecker(400, "Bad Request", "new message contains special lines"): assert all(not line.startswith(b"\\") for line in msg.splitlines())
                     with UserErrorChecker(400, "Bad Request", "invalid range header"): room_internal_offset = int(fullmatch(r"bytes=(\d+)-", self.headers["Range"])[0])
                     self._begin_response_body(200, "OK")
+                    footer = b"\n\\" + username + b" @ " + datetime.datetime.now(datetime.timezone.utc).isoformat().encode("ascii") + b"\n"
+                    if msg: self.wfile.write(footer)
                     try:
                         with open(room_name, "a+b" if msg else "rb") as room_file:
-                            if msg: room_file.write(msg + (b"\n\\" + username + b" @ " + datetime.datetime.now(datetime.timezone.utc).isoformat().encode("ascii") + b"\n"))
                             room_file.seek(room_internal_offset)
                             shutil.copyfileobj(room_file, self.wfile)
+                            if msg: room_file.write(msg + footer)
                     except FileNotFoundError: pass
                 except UserError: pass
         http.server.HTTPServer((os.environ["blabber_host"], int(os.environ["blabber_port"])), Handler).serve_forever()
