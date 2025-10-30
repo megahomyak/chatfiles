@@ -23,7 +23,7 @@ And here's a minimal response from the server:
 
 HTTP/1.1 206 Partial Content\r\n
 \r\n
-<messages in the user-specified range>
+<messages in the user-specified range, with a footer for the sent message coming first, if there was a sent message>
 
 Built-in privacy features (privacy from other members, the server is a trusted entity here):
 * Room names can contain UUIDs making it practically impossible to have a third party enter a room
